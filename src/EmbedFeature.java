@@ -15,6 +15,9 @@ public class EmbedFeature {
 	public int dim = 200;
 	public int vocab_size = 3616574;
 	public HashMap<String, Double[]> em = new HashMap<String, Double[]>();
+	public ArrayList<String> mentions = new ArrayList<String>();
+	public ArrayList<String> entities = new ArrayList<String>();
+	public HashMap<String, Double[]> em_used = new HashMap<String, Double[]>();
 	
 	public void loadEmbed() throws IOException {
 		BufferedReader br = IOManager.openReader(em_file);
@@ -41,44 +44,61 @@ public class EmbedFeature {
 	}
 	
 	public void generate(String file_in, String file_out) throws IOException {
-		BufferedWriter bw = IOManager.openWriter(file_out);
+		//BufferedWriter bw = IOManager.openWriter(file_out);
 		
 		BufferedReader br = IOManager.openReader(file_in);
 		String line = br.readLine().trim();
 		while (line != null) {
+			System.out.println(line);
 			String strs[] = line.split("\t");
 			int men_size = Integer.parseInt(strs[1]);
-			bw.write(line + "\n");
+			//bw.write(line + "\n");
 			
 			for (int i = 0; i < men_size; i++) {
 				line = br.readLine().trim();
 				String men = line.toLowerCase();
-				Double[] vec_men = getVec(men);
-				bw.write(line + "\n");
+				
+				ArrayList<String> men_tokens = parseTokens(men);
+				for (String token : men_tokens) {
+					if (!mentions.contains(token)) {
+						mentions.add(token);
+					}
+				}
+				//Double[] vec_men = getVec(men);
+				//bw.write(line + "\n");
 				
 				line = br.readLine().trim();
 				int ent_size = Integer.parseInt(line.split("\t")[2]);
-				bw.write(line + "\n");
+				//bw.write(line + "\n");
 				
 				for (int j = 0; j < ent_size; j++) {
 					line = br.readLine().trim();
 					String ent = line.toLowerCase();
-					Double[] vec_ent = getVec(ent);
-					bw.write(line + "\n");
+					ArrayList<String> ent_tokens = parseTokens(ent);
+					for (String token : ent_tokens) {
+						if (!mentions.contains(token)) {
+							mentions.add(token);
+						}
+					}
+					if (!entities.contains(line)) {
+						entities.add(line);
+					}
+					//Double[] vec_ent = getVec(ent);
+					//bw.write(line + "\n");
 					
 					line = br.readLine().trim();
 					strs = line.split("  ");
-					String new_line = strs[0] + "  " + strs[1];
-					int index = 3;
-					for (int k = 0; k < vec_men.length; k++) {
-						new_line = new_line + " " + index + ":" + vec_men[k];
-						index++;
-					}
-					for (int k = 0; k < vec_ent.length; k++) {
-						new_line = new_line + " " + index + ":" + vec_ent[k];
-						index++;
-					}
-					bw.write(new_line + "\n");
+//					String new_line = strs[0] + "  " + strs[1];
+//					int index = 3;
+//					for (int k = 0; k < vec_men.length; k++) {
+//						new_line = new_line + " " + index + ":" + vec_men[k];
+//						index++;
+//					}
+//					for (int k = 0; k < vec_ent.length; k++) {
+//						new_line = new_line + " " + index + ":" + vec_ent[k];
+//						index++;
+//					}
+					//bw.write(new_line + "\n");
 				}
 			}
 			
@@ -88,7 +108,23 @@ public class EmbedFeature {
 			}
 		}
 		br.close();
-		bw.close();
+		//bw.close();
+		
+		System.out.println("Done");
+	}
+	
+	public void getMentionEmbeddings(String file_in, String file_out) throws Exception {
+		ArrayList<String> words = IOManager.readLines(file_in);
+		for (String word : words) {
+			Double[] vec = em.get(word);
+			if (vec == null) {
+				System.out.println("Can't find token: " + word);
+			} else {
+				em_used.put(word, vec);
+			}
+		}
+		System.out.println(words.size() + "\t" + em_used.size());
+		Serialize(em_used, file_out);
 	}
 	
 	public void outputVocab() throws IOException {
@@ -100,10 +136,24 @@ public class EmbedFeature {
 		bw.close();
 	}
 	
-	public void Serialize(String fileName) throws Exception {
+	public void getWordList(String file) throws IOException {
+		BufferedWriter bw1 = IOManager.openWriter(file + "_men.txt");
+		for (String str : mentions) {
+			bw1.write(str + "\n");
+		}
+		bw1.close();
+		
+		BufferedWriter bw2 = IOManager.openWriter(file + "_ent.txt");
+		for (String str : entities) {
+			bw2.write(str + "\n");
+		}
+		bw2.close();
+	}
+	
+	public void Serialize(HashMap<String, Double[]> obj, String fileName) throws Exception {
 		FileOutputStream fileOut = new FileOutputStream(fileName);
 		ObjectOutputStream out = new ObjectOutputStream(fileOut);
-		out.writeObject(em);
+		out.writeObject(obj);
 		System.out.println("Done writing the data to " + fileName);
 		out.close();
 		fileOut.close();
@@ -122,6 +172,9 @@ public class EmbedFeature {
 		ArrayList<String> tokens = parseTokens(str);
 		
 		Double[] vec = new Double[dim];
+		for (int i = 0; i < dim; i++) {
+			vec[i] = 0.0;
+		}
 		int count = 0;
 		for (String token : tokens) {
 			Double[] vec_add = em.get(token);
@@ -140,15 +193,15 @@ public class EmbedFeature {
 		if (count == 0) {
 			return vec;
 		}
-		for (int i = 0; i < vec.length; i++) {
+		for (int i = 0; i < dim; i++) {
 			vec[i] = vec[i] / count;
 		}
 		return vec;
 	}
 
 	private Double[] vectorAdd(Double[] vec, Double[] vec_add) {
-		for (int i = 0; i < vec.length; i++) {
-			vec[i] = vec[i] + vec_add[i];
+		for (int i = 0; i < dim; i++) {
+			vec[i] += vec_add[i];
 		}
 		return vec;
 	}
