@@ -43,6 +43,56 @@ public class EmbedFeature {
 		//outputVocab();
 	}
 	
+	public void getTokens(String file_in, String file_out) throws IOException {
+		BufferedReader br = IOManager.openReader(file_in);
+		String line = br.readLine().trim();
+		while (line != null) {
+			System.out.println(line);
+			String strs[] = line.split("\t");
+			int men_size = Integer.parseInt(strs[1]);
+			
+			for (int i = 0; i < men_size; i++) {
+				line = br.readLine().trim();
+				String men = line.toLowerCase();
+				
+				ArrayList<String> men_tokens = parseTokens(men);
+				for (String token : men_tokens) {
+					if (!mentions.contains(token)) {
+						mentions.add(token);
+					}
+				}
+				
+				line = br.readLine().trim();
+				int ent_size = Integer.parseInt(line.split("\t")[2]);
+				
+				for (int j = 0; j < ent_size; j++) {
+					line = br.readLine().trim();
+					String ent = line.toLowerCase();
+					ArrayList<String> ent_tokens = parseTokens(ent);
+					for (String token : ent_tokens) {
+						if (!mentions.contains(token)) {
+							mentions.add(token);
+						}
+					}
+					if (!entities.contains(line)) {
+						entities.add(line);
+					}
+					
+					line = br.readLine().trim();
+					strs = line.split("  ");
+				}
+			}
+			
+			line = br.readLine();
+			if (line != null) {
+				line = line.trim();
+			}
+		}
+		br.close();
+		
+		System.out.println("Done");
+	}
+	
 	public void generate(String file_in, String file_out) throws IOException {
 		//BufferedWriter bw = IOManager.openWriter(file_out);
 		
