@@ -127,6 +127,25 @@ public class EmbedFeature {
 		Serialize(em_used, file_out);
 	}
 	
+	public void getEntitiyIDs(String map_in, String file_in, String file_out) throws Exception {
+		ArrayList<String> lines = IOManager.readLines(map_in);
+		HashMap<String, String> id_map = new HashMap<String, String>();
+		for (String line : lines) {
+			String[] strs = line.split("\t");
+			id_map.put(strs[0], strs[2]);
+		}
+		
+		BufferedWriter bw = IOManager.openWriter(file_out);
+		ArrayList<String> ents = IOManager.readLines(file_in);
+		for (String ent : ents) {
+			String id = id_map.get(ent);
+			if (id != null) {
+				bw.write(ent + "\t" + id +"\n");
+			}
+		}
+		bw.close();
+	}
+	
 	public void outputVocab() throws IOException {
 		BufferedWriter bw = IOManager.openWriter("vocab.txt");
 		Map<String, Double[]> sorted = new TreeMap<String, Double[]>(em);

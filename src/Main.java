@@ -12,6 +12,7 @@ public class Main {
 		//ef.loadEmbed();
 		//ef.getMentionEmbeddings("standard_men.txt", "standard_men_em.bin");
 		
-		
+		ef.getEntitiyIDs("/home/t-hapeng/data/embedding/wikifbmap.txt", "standard_ent.txt", "standard_ent_ids.txt");
+		// python 
 	}
 }
