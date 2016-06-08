@@ -14,7 +14,8 @@ public class EmbedFeature {
 	public String em_file = "/home/t-hapeng/data/embedding/vectors-enwikitext_vivek200.txt";
 	public int dim = 200;
 	public int vocab_size = 3616574;
-	public HashMap<String, Double[]> em = new HashMap<String, Double[]>();
+	public HashMap<String, Double[]> men_em = new HashMap<String, Double[]>();
+	public HashMap<String, Double[]> ent_em = new HashMap<String, Double[]>();
 	public ArrayList<String> mentions = new ArrayList<String>();
 	public ArrayList<String> entities = new ArrayList<String>();
 	public HashMap<String, Double[]> em_used = new HashMap<String, Double[]>();
@@ -37,13 +38,30 @@ public class EmbedFeature {
 			for (int j = 1; j < dim + 1; j++) {
 				vec[j-1] = Double.parseDouble(tokens[j]);
 			}
-			em.put(word, vec);
+			men_em.put(word, vec);
 		}
 		br.close();
-		//outputVocab();
 	}
 	
-	public void getTokens(String file_in, String file_out) throws IOException {
+	public void loadEntEmbed(String file, int ent_em_dim) throws IOException {
+		BufferedReader br = IOManager.openReader(file);
+		String line = br.readLine();
+		
+		while (line != null) {
+			String strs[] = line.split("  ");
+			String ent = strs[0];
+			Double[] vec = new Double[ent_em_dim];
+			for (int i = 1; i < ent_em_dim + 1; i++) {
+				vec[i-1] = Double.parseDouble(strs[i]);
+			}
+			ent_em.put(ent, vec);
+			line = br.readLine();
+		}
+		br.close();
+		System.out.println("Done Reading from " + file);
+	}
+	
+	public void getTokens(String file_in) throws IOException {
 		BufferedReader br = IOManager.openReader(file_in);
 		String line = br.readLine().trim();
 		while (line != null) {
@@ -94,61 +112,45 @@ public class EmbedFeature {
 	}
 	
 	public void generate(String file_in, String file_out) throws IOException {
-		//BufferedWriter bw = IOManager.openWriter(file_out);
+		BufferedWriter bw = IOManager.openWriter(file_out);
 		
 		BufferedReader br = IOManager.openReader(file_in);
 		String line = br.readLine().trim();
 		while (line != null) {
-			System.out.println(line);
+			//System.out.println(line);
 			String strs[] = line.split("\t");
 			int men_size = Integer.parseInt(strs[1]);
-			//bw.write(line + "\n");
+			bw.write(line + "\n");
 			
 			for (int i = 0; i < men_size; i++) {
 				line = br.readLine().trim();
 				String men = line.toLowerCase();
-				
-				ArrayList<String> men_tokens = parseTokens(men);
-				for (String token : men_tokens) {
-					if (!mentions.contains(token)) {
-						mentions.add(token);
-					}
-				}
-				//Double[] vec_men = getVec(men);
-				//bw.write(line + "\n");
+				Double[] vec_men = getMenVec(men, 200);
+				bw.write(line + "\n");
 				
 				line = br.readLine().trim();
 				int ent_size = Integer.parseInt(line.split("\t")[2]);
-				//bw.write(line + "\n");
+				bw.write(line + "\n");
 				
 				for (int j = 0; j < ent_size; j++) {
 					line = br.readLine().trim();
-					String ent = line.toLowerCase();
-					ArrayList<String> ent_tokens = parseTokens(ent);
-					for (String token : ent_tokens) {
-						if (!mentions.contains(token)) {
-							mentions.add(token);
-						}
-					}
-					if (!entities.contains(line)) {
-						entities.add(line);
-					}
-					//Double[] vec_ent = getVec(ent);
-					//bw.write(line + "\n");
+					String ent = line;
+					Double[] vec_ent = getEntVec(ent, 1000);
+					bw.write(line + "\n");
 					
 					line = br.readLine().trim();
-					strs = line.split("  ");
-//					String new_line = strs[0] + "  " + strs[1];
-//					int index = 3;
-//					for (int k = 0; k < vec_men.length; k++) {
-//						new_line = new_line + " " + index + ":" + vec_men[k];
-//						index++;
-//					}
-//					for (int k = 0; k < vec_ent.length; k++) {
-//						new_line = new_line + " " + index + ":" + vec_ent[k];
-//						index++;
-//					}
-					//bw.write(new_line + "\n");
+					//strs = line.split("  ");
+					String new_line = line;//strs[0] + "  " + strs[1];
+					int index = 41; //3;
+					for (int k = 0; k < vec_men.length; k++) {
+						new_line = new_line + " " + index + ":" + vec_men[k];
+						index++;
+					}
+					for (int k = 0; k < vec_ent.length; k++) {
+						new_line = new_line + " " + index + ":" + vec_ent[k];
+						index++;
+					}
+					bw.write(new_line + "\n");
 				}
 			}
 			
@@ -158,7 +160,7 @@ public class EmbedFeature {
 			}
 		}
 		br.close();
-		//bw.close();
+		bw.close();
 		
 		System.out.println("Done");
 	}
@@ -166,7 +168,7 @@ public class EmbedFeature {
 	public void getMentionEmbeddings(String file_in, String file_out) throws Exception {
 		ArrayList<String> words = IOManager.readLines(file_in);
 		for (String word : words) {
-			Double[] vec = em.get(word);
+			Double[] vec = men_em.get(word);
 			if (vec == null) {
 				System.out.println("Can't find token: " + word);
 			} else {
@@ -198,7 +200,7 @@ public class EmbedFeature {
 	
 	public void outputVocab() throws IOException {
 		BufferedWriter bw = IOManager.openWriter("vocab.txt");
-		Map<String, Double[]> sorted = new TreeMap<String, Double[]>(em);
+		Map<String, Double[]> sorted = new TreeMap<String, Double[]>(men_em);
 		for (String word : sorted.keySet()) {
 			bw.write(word + "\n");
 		}
@@ -231,24 +233,24 @@ public class EmbedFeature {
 	public void Deserialize(String fileName) throws Exception {
 		FileInputStream fileIn = new FileInputStream(fileName);
 		ObjectInputStream in = new ObjectInputStream(fileIn);
-		em = (HashMap<String, Double[]>) in.readObject();
+		men_em = (HashMap<String, Double[]>) in.readObject();
 		System.out.println("Done reading the data from " + fileName);
 		in.close();
 		fileIn.close();
 	}
 	
-	private Double[] getVec(String str) {
+	private Double[] getMenVec(String str, int cur_dim) {
 		ArrayList<String> tokens = parseTokens(str);
 		
-		Double[] vec = new Double[dim];
-		for (int i = 0; i < dim; i++) {
+		Double[] vec = new Double[cur_dim];
+		for (int i = 0; i < cur_dim; i++) {
 			vec[i] = 0.0;
 		}
 		int count = 0;
 		for (String token : tokens) {
-			Double[] vec_add = em.get(token);
+			Double[] vec_add = men_em.get(token);
 			if (vec_add == null) {
-				System.out.println("Can't find token: " + token);
+				//System.out.println("Can't find token: " + token);
 			} else {
 				count++;
 				vec = vectorAdd(vec, vec_add);
@@ -257,19 +259,36 @@ public class EmbedFeature {
 		vec = vectorAvg(vec, count);
 		return vec;
 	}
+	
+	private Double[] getEntVec(String str, int cur_dim) {
+		Double[] vec = ent_em.get(str);
+		if (vec == null) {
+			//System.out.println("Can't find Entity: " + str);
+			vec = new Double[cur_dim];
+			for (int i = 0; i < cur_dim; i++) {
+				vec[i] = 0.0;
+			}
+		} else {
+			if (vec.length != cur_dim) {
+				System.out.println("Dimension Wrong: " + str + " " + vec.length);
+				System.exit(-1);
+			}
+		}
+		return vec;
+	}
 
 	private Double[] vectorAvg(Double[] vec, int count) {
 		if (count == 0) {
 			return vec;
 		}
-		for (int i = 0; i < dim; i++) {
+		for (int i = 0; i < vec.length; i++) {
 			vec[i] = vec[i] / count;
 		}
 		return vec;
 	}
 
 	private Double[] vectorAdd(Double[] vec, Double[] vec_add) {
-		for (int i = 0; i < dim; i++) {
+		for (int i = 0; i < vec.length; i++) {
 			vec[i] += vec_add[i];
 		}
 		return vec;
