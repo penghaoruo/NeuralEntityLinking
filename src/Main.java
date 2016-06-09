@@ -19,8 +19,12 @@ public class Main {
 		
 		ef.Deserialize(men_em_file);
 		ef.loadEntEmbed(ent_em_file, 1000);
-		ef.generate("/home/t-hapeng/data/toy/bin_output-trainDev.x.bin", "trainDev_with_em_all.x.bin");
-		ef.generate("/home/t-hapeng/data/toy/bin_output-test.x.bin", "test_with_em_all.x.bin");
-		ef.generate("/home/t-hapeng/data/toy/bin_output-tacl.x.bin", "tacl_with_em_all.x.bin");
+		ef.generate("/home/t-hapeng/data/toy/bin_output-trainDev.x.bin", "trainDev_with_em.x.bin");
+		ef.generate("/home/t-hapeng/data/toy/bin_output-test.x.bin", "test_with_em.x.bin");
+		ef.generate("/home/t-hapeng/data/toy/bin_output-tacl.x.bin", "tacl_with_em.x.bin");
+		
+		//ef.getEntityFromIDs("/home/t-hapeng/data/embedding/wikifbmap.txt", "/home/t-hapeng/data/fbdata/annotated_fb_data_test.txt", "fbdata_test_label.txt");
+		//ef.getEntityFromIDs("/home/t-hapeng/data/embedding/wikifbmap.txt", "/home/t-hapeng/data/fbdata/annotated_fb_data_valid.txt", "fbdata_vaild_label.txt");
+		//ef.getEntityFromIDs("/home/t-hapeng/data/embedding/wikifbmap.txt", "/home/t-hapeng/data/fbdata/annotated_fb_data_train.txt", "fbdata_train_label.txt");
 	}
 }

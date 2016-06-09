@@ -139,9 +139,9 @@ public class EmbedFeature {
 					bw.write(line + "\n");
 					
 					line = br.readLine().trim();
-					//strs = line.split("  ");
-					String new_line = line;//strs[0] + "  " + strs[1];
-					int index = 41; //3;
+					strs = line.split("  ");
+					String new_line = strs[0] + "  " + strs[1];//line;
+					int index = 3; //41;
 					for (int k = 0; k < vec_men.length; k++) {
 						new_line = new_line + " " + index + ":" + vec_men[k];
 						index++;
@@ -193,6 +193,31 @@ public class EmbedFeature {
 			String id = id_map.get(ent);
 			if (id != null) {
 				bw.write(ent + "\t" + id +"\n");
+			}
+		}
+		bw.close();
+	}
+	
+	public void getEntityFromIDs(String map_in, String file_in, String file_out) throws IOException {
+		ArrayList<String> lines = IOManager.readLines(map_in);
+		HashMap<String, String> id_map = new HashMap<String, String>();
+		for (String line : lines) {
+			String[] strs = line.split("\t");
+			id_map.put(strs[2], strs[0]);
+		}
+		
+		BufferedWriter bw = IOManager.openWriter(file_out);
+		lines = IOManager.readLines(file_in);
+		for (String line : lines) {
+			int p = line.indexOf('/');
+			int q = line.indexOf('\t');
+			String id = line.substring(p, q);
+			String ent = id_map.get(id);
+			if (ent != null) {
+				bw.write(ent + "\n");
+			} else {
+				System.out.println(id);
+				bw.write("Not Found!\n");
 			}
 		}
 		bw.close();
